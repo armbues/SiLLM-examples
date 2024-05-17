@@ -20,6 +20,11 @@ Implementation of the "Massive Multitask Language Understanding" benchmark using
 
 Run `mmlu.py` with the model you would like to evaluate.
 
+## MMLU-Pro Benchmark
+Implementation of the MMLU-Pro benchmark using the [MMLU-Pro](https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro) dataset.
+
+Run `mmlu-pro.py` with the model you would like to evaluate.
+
 ## Perplexity
 Calculating perplexity scores for a sample [dataset](https://huggingface.co/datasets/Cohere/wikipedia-2023-11-embed-multilingual-v3) of entry paragraphs from Wikipedia articles.
 
