@@ -5,6 +5,9 @@ Make sure to install the requirements for these examples:
 pip install -r requirements-examples.txt
 ```
 
+## Control
+Examples for training control vectors from a model's hidden states that can be used to influence the behavior and generated output during inference.
+
 ## HelpSteer LoRA
 LoRA training [Mistral-7B-Instruct-v0.2](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2) with the Nvidia [HelpSteer](https://huggingface.co/datasets/nvidia/HelpSteer) dataset.
 
