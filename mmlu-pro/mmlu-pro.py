@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
         # Predict answer
         y = mx.array(model.tokenizer.encode(prompt))
-        logits, _ = model.model(y[None])
+        logits = model.model(y[None])
         logits = logits[:, -1, :]
         choices_logits = mx.take(logits, mx.array(choices_ids))
         choices_prob = mx.softmax(choices_logits)
