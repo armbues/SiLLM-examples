@@ -6,7 +6,7 @@ from sillm.experimental.speculative import SpeculativeLLM
 
 if __name__ == "__main__":
     # Parse commandline arguments
-    parser = argparse.ArgumentParser(description="Convert a model to a different format.")
+    parser = argparse.ArgumentParser(description="A simple CLI for generating text with SiLLM using speculative decoding.")
     parser.add_argument("draft", type=str, help="The input model directory or file")
     parser.add_argument("target", type=str, help="The output model directory or file")
     parser.add_argument("-s", "--seed", type=int, default=-1, help="Seed for randomization")
