@@ -1,9 +1,15 @@
 # Examples for using SiLLM
 
-Make sure to install the requirements for these examples:
+Make sure to install the requirements for the examples:
 ``` sh
-pip install -r requirements-examples.txt
+pip install -r requirements.txt
 ```
+
+## Agents
+Example of a weather chatbot using an implementation of agents that handles code execution in a Python sandbox.
+
+## Beam
+Example chat application using beam search with configurable parameters.
 
 ## Control
 Examples for training control vectors from a model's hidden states that can be used to influence the behavior and generated output during inference.
@@ -32,3 +38,6 @@ Run `mmlu-pro.py` with the model you would like to evaluate.
 Calculating perplexity scores for a sample [dataset](https://huggingface.co/datasets/Cohere/wikipedia-2023-11-embed-multilingual-v3) of entry paragraphs from Wikipedia articles.
 
 Run `perplexity.py` with the model you would like to evaluate. Add quantization options to evaluate perplexity with quantized models.
+
+## Speculative
+Examples for using speculative decoding in chat and speculative edits in spelling correction.
