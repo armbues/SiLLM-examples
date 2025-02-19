@@ -10,7 +10,7 @@ from sillm.experimental.beam import beam_search
 
 if __name__ == "__main__":
     # Parse commandline arguments
-    parser = argparse.ArgumentParser(description="A simple CLI for generating text with SiLLM using speculative edits.")
+    parser = argparse.ArgumentParser(description="A simple CLI for generating text with SiLLM using beam search.")
     parser.add_argument("model", type=str, help="The model directory or file")
     parser.add_argument("-s", "--seed", type=int, default=-1, help="Seed for randomization")
     parser.add_argument("-b", "--beam_width", type=int, default=4, help="Beam width (default: 4)")
