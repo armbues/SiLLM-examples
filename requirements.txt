@@ -1,3 +1,1 @@
 sillm-mlx
-datasets
-huggingface_hub
