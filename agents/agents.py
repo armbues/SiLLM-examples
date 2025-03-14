@@ -1,6 +1,8 @@
 import operator
 import inspect
+import typing
 import re
+import json
 
 from RestrictedPython.compile import compile_restricted_exec
 from RestrictedPython.PrintCollector import PrintCollector
@@ -10,9 +12,113 @@ class Agent():
     """
     Base class for agents.
     """
+    def __init__(self):
+        raise NotImplementedError("Class agents.Agent is used for inheritance only")
+    
     def handle_response(self, response):
         return None
-    
+
+def json_function_stub(name, func):
+    """
+    Generate a JSON stub from a function object.
+    """
+    stub = {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": "",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    }
+
+    sig = inspect.signature(func)
+    for param in sig.parameters.values():
+        param_entry = {}
+
+        if typing.get_origin(param.annotation) is typing.Annotated:
+            args = typing.get_args(param.annotation)
+            param_entry["type"] = args[0].__name__
+            param_entry["description"] = args[1]
+        else:
+            param_entry["type"] = param.annotation.__name__
+
+        if param.default == inspect._empty:
+            stub["function"]["parameters"]["required"].append(param.name)
+        # else:
+        #     param_entry["default"] = param.default
+
+        stub["function"]["parameters"]["properties"][param.name] = param_entry
+
+    docstring = inspect.getdoc(func)
+    if docstring is not None:
+        stub["function"]["description"] = docstring
+
+    return stub
+
+class ToolAgent(Agent):
+    """
+    Agent that handles JSON tool function calls.
+
+    Use typing.Annotated to provide parameter descriptions.
+    """
+    def __init__(self, tool_functions: list|dict):
+        if isinstance(tool_functions, list):
+            tool_functions = {func.__name__:func for func in tool_functions}
+        self.tool_functions = tool_functions
+        self.tools = [json_function_stub(name, func) for name, func in tool_functions.items()]
+
+    def handle_response(self, response):
+        response_json = None
+        if '<tool_call>' in response and '</tool_call>' in response:
+            response_json = re.findall(r'<tool_call>(.*?)</tool_call>', response, re.DOTALL)[0]
+        elif '```' in response:
+            response_json = re.findall(r'```(.*?)```', response, re.DOTALL)[0]
+            response_json = response_json.replace("'", '"')
+        elif response.strip().startswith("{"):
+            response_json = response.strip()
+        else:
+            return None
+        
+        try:
+            function_calls = json.loads(response_json)
+        except:
+            return "Error: invalid JSON format."
+        
+        if not isinstance(function_calls, list):
+            function_calls = [function_calls]
+
+        tool_response = ""
+        for function_call in function_calls:
+            name = function_call.get("name", None)
+            if name is None:
+                return "Error: missing function name in function call."
+            func = self.tool_functions.get(name, None)
+            if func is None:
+                return f"Error: unknown function {function_call['name']}."
+
+            if "parameters" in function_call:
+                params = function_call["parameters"]
+            elif "arguments" in function_call:
+                params = function_call["arguments"]
+            else:
+                return "Error: missing parameters in function call."
+            
+            try:
+                result = func(**params)
+            except Exception as e:
+                return f"Error: function call failed"
+            
+            try:
+                tool_response += json.dumps(result) + "\n"
+            except:
+                return "Error: function call did not return JSON serializable result."
+            
+        return tool_response
+
 def code_function_stub(func):
     """
     Generate a function stub from a function object.
@@ -54,9 +160,7 @@ class CodeAgent(Agent):
     """
     Agent that handles code execution in a Python sandbox.
     """
-    def __init__(self,
-                 tool_functions: list|dict
-                 ):
+    def __init__(self, tool_functions: list|dict):
         if isinstance(tool_functions, list):
             tool_functions = {func.__name__:func for func in tool_functions}
         self.tool_functions = tool_functions
@@ -131,9 +235,13 @@ class CodeAgent(Agent):
         except Exception as e:
             return f"Error: {e}"
         
-        if "_print" in self.sandbox_locals and len(self.sandbox_locals["_print"]()) > 0:
-            # Return print output
-            return self.sandbox_locals["_print"]().strip()
+        if "_print" in self.sandbox_locals:
+            printed = self.sandbox_locals["_print"]().strip()
+            del self.sandbox_locals["_print"]
+
+            if len(printed) > 0:
+                return printed
+            else:
+                return "Error: result string is empty."
         else:
-            # No print statement executed
             return "Error: No print statement executed in code block."
