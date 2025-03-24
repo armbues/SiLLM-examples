@@ -122,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument("model", type=str, help="The model directory or file")
     parser.add_argument("-a", "--input_adapters", default=None, type=str, help="Load and merge LoRA adapter weights from .safetensors file")
     parser.add_argument("--template", type=str, default=None, help="Chat template (chatml, llama2, alpaca, etc.)")
-    parser.add_argument("-t", "--temperature", type=float, default=0.7, help="Sampling temperature")
+    parser.add_argument("-t", "--temperature", type=float, default=0.0, help="Sampling temperature")
     parser.add_argument("-m", "--max_tokens", type=int, default=8192, help="Max. number of tokens to generate")
     parser.add_argument("-v", "--verbose", default=1, action="count", help="Increase output verbosity")
     args = parser.parse_args()
@@ -149,7 +149,6 @@ if __name__ == "__main__":
 
     # Initialize agent
     agent = agents.CodeAgent(tool_functions)
-    system_prompt = agent.format_system_prompt() + f"\n\nToday is {datetime.datetime.now().strftime('%B %d, %Y')}."
 
     tool_role = "user"
     if model.args.model_type == "qwen2":
@@ -157,6 +156,7 @@ if __name__ == "__main__":
 
     # Init conversation template
     template = sillm.init_template(model.tokenizer, model.args, args.template)
+    system_prompt = agent.format_system_prompt() + f"\n\nToday is {datetime.datetime.now().strftime('%B %d, %Y')}."
     conversation = sillm.Conversation(template, system_prompt=system_prompt)
     cache = model.init_kv_cache()
 

@@ -11,8 +11,6 @@ import sillm.utils as utils
 
 import agents
 
-SYSTEM_PROMPT = f"You are a function calling AI model. Today is {datetime.datetime.now().strftime('%B %d, %Y')}."
-
 WMO_CODES = {0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Depositing rime fog", 51: "Drizzle: Light intensity", 53: "Drizzle: Moderate intensity", 55: "Drizzle: Dense intensity", 56: "Freezing Drizzle: Light intensity", 57: "Freezing Drizzle: Dense intensity", 61: "Rain: Slight intensity", 63: "Rain: Moderate intensity", 65: "Rain: Heavy intensity", 66: "Freezing Rain: Light intensity", 67: "Freezing Rain: Heavy intensity", 71: "Snowfall: Slight intensity", 73: "Snowfall: Moderate intensity", 75: "Snowfall: Heavy intensity", 77: "Snow grains", 80: "Rain showers: Slight intensity", 81: "Rain showers: Moderate intensity", 82: "Rain showers: Violent intensity", 85: "Snow showers: Slight intensity", 86: "Snow showers: Heavy intensity", 95: "Thunderstorm: Slight or moderate intensity", 96: "Thunderstorm with slight hail", 99: "Thunderstorm with heavy hail"}
 
 def request_api(url):
@@ -81,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument("model", type=str, help="The model directory or file")
     parser.add_argument("-a", "--input_adapters", default=None, type=str, help="Load and merge LoRA adapter weights from .safetensors file")
     parser.add_argument("--template", type=str, default=None, help="Chat template (chatml, llama2, alpaca, etc.)")
-    parser.add_argument("-t", "--temperature", type=float, default=0.7, help="Sampling temperature")
+    parser.add_argument("-t", "--temperature", type=float, default=0.0, help="Sampling temperature")
     parser.add_argument("-m", "--max_tokens", type=int, default=8192, help="Max. number of tokens to generate")
     parser.add_argument("-v", "--verbose", default=1, action="count", help="Increase output verbosity")
     args = parser.parse_args()
@@ -115,13 +113,17 @@ if __name__ == "__main__":
 
     # Init conversation template
     template = sillm.init_template(model.tokenizer, model.args, args.template)
-    conversation = sillm.Conversation(template, system_prompt=SYSTEM_PROMPT, tools=agent.tools)
+    system_prompt = agent.format_system_prompt() + f"\n\nToday is {datetime.datetime.now().strftime('%B %d, %Y')}."
+    conversation = sillm.Conversation(template, system_prompt=system_prompt)
     cache = model.init_kv_cache()
 
     generate_args = {
         "temperature": args.temperature,
         "max_tokens": args.max_tokens
     }
+
+    # Print system prompt
+    print(colorama.Fore.WHITE + system_prompt + colorama.Fore.RESET)
 
     request = None
     while True:

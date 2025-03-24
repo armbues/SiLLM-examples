@@ -59,6 +59,25 @@ def json_function_stub(name, func):
 
     return stub
 
+default_tool_system_prompt = """You are a ReAct agent that has access to a set of defined functions.
+
+Here are the available functions in JSONSchema format:
+{functions}
+
+You can call a function by providing a JSON object with the function name and parameters formatted in a markdown code block like the following:
+```
+{
+    "name": "function_name",
+    "parameters": {
+        "param1": 42,
+        "param2": "string"
+    }
+}
+```
+
+Think step by step and provide your reasoning, outside of the function calls. Only call one function at a time and wait for the execution result before calling the next function.
+"""
+
 class ToolAgent(Agent):
     """
     Agent that handles JSON tool function calls.
@@ -71,25 +90,41 @@ class ToolAgent(Agent):
         self.tool_functions = tool_functions
         self.tools = [json_function_stub(name, func) for name, func in tool_functions.items()]
 
+    def format_system_prompt(self, prompt=None):
+        """
+        Format the system prompt with the available tool functions.
+
+        Args:
+            prompt (str, optional): System prompt template. Uses default template if None. Defaults to None.
+        Returns:
+            str: Formatted system prompt.
+        """
+        if prompt is None:
+            prompt = default_tool_system_prompt
+
+        tool_block = "\n\n".join([json.dumps(func, indent=4) for func in self.tools]) + "\n"
+        if "{functions}" not in prompt:
+            raise ValueError("Prompt does not contain {functions} placeholder")
+
+        return prompt.replace("{functions}", tool_block)
+
     def handle_response(self, response):
-        response_json = None
-        if '<tool_call>' in response and '</tool_call>' in response:
-            response_json = re.findall(r'<tool_call>(.*?)</tool_call>', response, re.DOTALL)[0]
-        elif '```' in response:
-            response_json = re.findall(r'```(.*?)```', response, re.DOTALL)[0]
-            response_json = response_json.replace("'", '"')
+        code_blocks = []
+        if '```' in response:
+            code_blocks = re.findall(r'```\w*(.*?)```', response, re.DOTALL)
+        elif '<tool_call>' in response and '</tool_call>' in response:
+            code_blocks = re.findall(r'<tool_call>(.*?)</tool_call>', response, re.DOTALL)
+        elif '[TOOL_CALLS]' in response:
+            code_blocks = response.split('[TOOL_CALLS]')
         elif response.strip().startswith("{"):
-            response_json = response.strip()
+            code_blocks = [response.strip()]
         else:
             return None
         
         try:
-            function_calls = json.loads(response_json)
+            function_calls = [json.loads(block) for block in code_blocks]
         except:
             return "Error: invalid JSON format."
-        
-        if not isinstance(function_calls, list):
-            function_calls = [function_calls]
 
         tool_response = ""
         for function_call in function_calls:
