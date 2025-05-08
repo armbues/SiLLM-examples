@@ -151,7 +151,7 @@ if __name__ == "__main__":
     agent = agents.CodeAgent(tool_functions)
 
     tool_role = "user"
-    if model.args.model_type == "qwen2":
+    if model.args.model_type in ("qwen2", "qwen3"):
         tool_role = "tool"
 
     # Init conversation template
